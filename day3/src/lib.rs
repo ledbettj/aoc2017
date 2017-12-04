@@ -1,4 +1,51 @@
 mod day3 {
+  use std::collections::HashMap;
+
+  pub fn sum_neighbors(map: &HashMap<(i32, i32), i32>, position: (i32, i32)) -> i32 {
+    let mut sum : i32 = 0;
+    let (x1, y1) = position;
+
+    for x in -1..2 {
+      for y in -1..2 {
+        let neighbor = (x1 + x, y1 + y);
+        if let Some(&neighbor_value) = map.get(&neighbor) {
+          //println!("pos {:?} neighbor {:?} value {}", position, neighbor, neighbor_value);
+          sum += neighbor_value;
+        }
+      }
+    }
+
+    sum
+  }
+
+  pub fn part2(target: i32) -> i32 {
+    let mut position : (i32, i32)  = (0, 0);
+    let mut direction : (i32, i32) = (0, -1);
+    let mut map = HashMap::<(i32, i32), i32>::new();
+    let mut value : i32 = 1;
+
+    /* (0, 0) starts with 1 */
+    map.insert((0, 0), 1);
+
+    while value <= target {
+      let (x, y) = position;
+      let (dx, dy) = direction;
+
+      value = sum_neighbors(&map, position);
+      map.insert(position, value);
+
+      if  (x == y) || ((x < 0) && (x == -y)) || ((x > 0) && (x == 1 - y)) {
+        direction = (-dy, dx);
+      }
+      let (dx, dy) = direction;
+
+      position = (x + dx, y + dy);
+    }
+
+    value
+  }
+
+
   pub fn manhattan_distance(p1: (i32, i32), p2: (i32, i32)) -> i32 {
     let (x1, y1) = p1;
     let (x2, y2) = p2;
@@ -37,6 +84,16 @@ mod day3 {
 #[cfg(test)]
 mod tests {
   use day3;
+
+  #[test]
+  fn part2() {
+    assert_eq!(day3::part2(3), 4);
+    assert_eq!(day3::part2(4), 5);
+    assert_eq!(day3::part2(7), 10);
+    assert_eq!(day3::part2(10),11);
+
+    assert_eq!(day3::part2(325489), 330785);
+  }
 
   #[test]
   fn part1() {
