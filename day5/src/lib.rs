@@ -32,8 +32,22 @@ mod day5 {
       self
     }
 
+    pub fn step_odd(&mut self) -> &Self {
+      let old_position = self.position as usize;
+      let offset       = self.instructions[old_position];
+
+      self.position += offset;
+
+      if offset >= 3 {
+        self.instructions[old_position] -= 1;
+      } else {
+        self.instructions[old_position] += 1;
+      }
+      self
+    }
+
     pub fn is_terminated(&self) -> bool {
-      self.position < 0 || self.position as usize > self.instructions.len()
+      self.position < 0 || self.position as usize >= self.instructions.len()
     }
   }
 }
@@ -41,12 +55,11 @@ mod day5 {
 #[cfg(test)]
 mod tests {
   use day5::JumpList;
-  use std::env;
+  const FILENAME : &str = "./input.txt";
 
   #[test]
-  fn it_works() {
-    let filename = env::args().skip(1).last().expect("Provide input filename");
-    let mut list = JumpList::new(&filename).expect("Failed to read jumplist");
+  pub fn test_part1() {
+    let mut list = JumpList::new(FILENAME).expect("Failed to read jumplist");
 
     let mut n = 0;
 
@@ -58,6 +71,23 @@ mod tests {
       }
     }
 
-    panic!("escaped after {} iterations", n);
+    assert_eq!(n, 358131);
+  }
+
+  #[test]
+  pub fn test_part2() {
+    let mut list = JumpList::new(FILENAME).expect("Failed to read jumplist");
+
+    let mut n = 0;
+
+    loop {
+      list.step_odd();
+      n = n + 1;
+      if list.is_terminated() {
+        break;
+      }
+    }
+
+    assert_eq!(n, 25558839);
   }
 }
