@@ -1,45 +1,59 @@
 mod day6 {
   use std::collections::HashSet;
+  use std::num;
 
-  pub fn initialize_banks(input: &str) -> Vec<u32> {
-    input
-      .split_whitespace()
-      .map(|token| token.parse::<u32>().expect("Invalid value"))
-      .collect()
+  #[derive(Debug, Clone, Hash, PartialEq, Eq)]
+  pub struct MemoryBanks {
+    banks: Vec<u32>
   }
 
-  pub fn target_bank(banks: &Vec<u32>) -> (usize, u32) {
-    let (pos, &value) = banks.iter()
-      .enumerate()
-      .max_by_key(|&(i, v)| (v, -(i as i32)))
-      .expect("Empty bank provided");
+  impl MemoryBanks {
+    pub fn new(input: &str) -> Result<MemoryBanks, num::ParseIntError> {
+      let banks = input
+        .split_whitespace()
+        .map(|token| token.parse::<u32>() )
+        .collect();
 
-    (pos, value)
-  }
+      match banks {
+        Ok(b)  => Ok(MemoryBanks{banks: b}),
+        Err(e) => Err(e)
+      }
+    }
 
-  pub fn rebalance_banks(banks: &mut Vec<u32>) {
-    let (index, value) = target_bank(&banks);
-    let len = banks.len();
+    fn find_balance_target(&self) -> (usize, u32) {
+      let (pos, &value) = self.banks.iter()
+        .enumerate()
+        .max_by_key(|&(i, v)| (v, -(i as i32)))
+        .expect("Empty bank provided");
 
-    banks[index] = 0;
+      (pos, value)
+    }
 
-    let mut count = value;
-    let mut pos = (index + 1) % len;
+    pub fn rebalance(&mut self) {
+      let (index, value) = self.find_balance_target();
+      let len = self.banks.len();
 
-    while count > 0 {
-      banks[pos] += 1;
-      pos = (pos + 1) % len;
-      count -= 1;
+      self.banks[index] = 0;
+
+      let mut count = value;
+      let mut pos = (index + 1) % len;
+
+      while count > 0 {
+        self.banks[pos] += 1;
+        pos = (pos + 1) % len;
+        count -= 1;
+      }
     }
   }
 
-  pub fn count_to_cycle_banks(mut banks: &mut Vec<u32>) -> usize {
+
+  pub fn count_to_cycle_banks(mut banks: &mut MemoryBanks) -> usize {
     let mut set = HashSet::new();
     let mut count = 0;
     set.insert(banks.clone());
 
     loop {
-      rebalance_banks(&mut banks);
+      banks.rebalance();
       count += 1;
 
       if !set.insert(banks.clone()) {
@@ -55,23 +69,37 @@ mod day6 {
 mod tests {
   use day6::*;
   #[test]
-  fn it_works() {
-    assert_eq!(initialize_banks("1 2\t3"), [1, 2, 3]);
+  fn test_rebalance() {
+    let mut b = MemoryBanks::new("0 3 1 3").unwrap();
+    let t = MemoryBanks::new("1 0 2 4").unwrap();
 
-    let mut b = initialize_banks("1 2 1 2");
-    rebalance_banks(&mut b);
-    assert_eq!(b, [1, 0, 2, 3]);
-    rebalance_banks(&mut b);
-    assert_eq!(b, [2, 1, 3, 0]);
+    b.rebalance();
+    assert_eq!(b, t);
+  }
+  
+  #[test]
+  fn part1() {
+    let mut b = MemoryBanks::new("10	3	15	10	5	15	5	15	9	2	5	8	5	2	3	6").unwrap();
 
-    let mut b2 = initialize_banks("0 2 7 0");
-    assert_eq!(count_to_cycle_banks(&mut b2), 5);
+    assert_eq!(count_to_cycle_banks(&mut b), 14029);
   }
 
   #[test]
-  fn part1() {
-    let mut b = initialize_banks("10	3	15	10	5	15	5	15	9	2	5	8	5	2	3	6");
+  fn part2() {
+    let mut b = MemoryBanks::new("10	3	15	10	5	15	5	15	9	2	5	8	5	2	3	6").unwrap();
+    count_to_cycle_banks(&mut b);
 
-    assert_eq!(count_to_cycle_banks(&mut b), 14029);
+    let target = b.clone();
+    let mut count = 0;
+    loop {
+      b.rebalance();
+      count += 1;
+
+      if b == target {
+        break;
+      }
+    }
+
+    assert_eq!(count, 2765);
   }
 }
