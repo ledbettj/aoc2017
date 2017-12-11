@@ -38,6 +38,24 @@ mod day10 {
         self.hash_step(length);
       }
     }
+
+    pub fn full_hash(&mut self, instructions: &str) -> String {
+      let mut values : Vec<usize> = instructions.chars().map(|ch| ch as usize).collect();
+      for &i in [17, 31, 73, 47, 23].iter() {
+        values.push(i);
+      }
+      for _ in 0..64 {
+        self.hash(&values);
+      }
+
+      let dense : Vec<u32> = self.get().chunks(16).map(|chunk| {
+        chunk.iter().fold(0 , |total, &value| total ^ value )
+      }).collect();
+
+      let parts : Vec<String> = dense.iter().map(|value| format!("{:02x}", value)).collect();
+
+      parts.join("")
+    }
   }
 }
 
@@ -53,6 +71,27 @@ mod tests {
     let items : Vec<u32> = list.get().iter().take(2).cloned().collect();
 
     assert_eq!(items[0] * items[1], 38415);
+  }
+
+  #[test]
+  fn part2() {
+    let text = "189,1,111,246,254,2,0,120,215,93,255,50,84,15,94,62";
+    let mut list = CircularList::new(256);
+
+    let s = list.full_hash(text);
+
+    assert_eq!(s, "9de8846431eef262be78f590e39a4848");
+  }
+
+
+  #[test]
+  fn test_part2() {
+    let text = "AoC 2017";
+    let mut list = CircularList::new(256);
+
+    let s = list.full_hash(text);
+
+    assert_eq!(s, "33efeb34ea91902bb2f59c9920caa6cd");
   }
 
   #[test]
