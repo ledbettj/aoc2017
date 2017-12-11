@@ -1,6 +1,6 @@
 mod day11 {
   pub const INPUT : &'static str = include_str!("../input.txt");
-  
+
   type Direction = (i32, i32, i32);
   const NORTH     : Direction = (0, 1, -1);
   const NORTHEAST : Direction = (1, 0, -1);
@@ -11,14 +11,19 @@ mod day11 {
 
   pub type Point = (i32, i32, i32);
 
+  pub fn step(pos: &mut Point, dir: &Direction ) {
+    let &mut (ref mut x, ref mut y, ref mut z) = pos;
+    let &(dx, dy, dz) = dir;
+    *x += dx;
+    *y += dy;
+    *z += dz;
+
+  }
+
   pub fn walk(start: &Point, path: &Vec<Direction>) -> Point {
     let mut p = start.clone();
     for dir in path {
-      let (ref mut x, ref mut y, ref mut z) = p;
-      let &(dx, dy, dz) = dir;
-      *x += dx;
-      *y += dy;
-      *z += dz;
+      step(&mut p, &dir);
     }
 
     p
@@ -69,6 +74,20 @@ mod tests {
     path = parse_path("se,sw,se,sw,sw");
     rc = walk(&start, &path);
     assert_eq!(hex_distance(&rc, &start), 3);
+  }
+
+  #[test]
+  fn part2() {
+    let path = parse_path(INPUT);
+    let start : Point = (0, 0, 0);
+    let mut pos : Point = (0, 0, 0);
+
+    let furthest = path.iter().map(|dir| {
+      step(&mut pos, &dir);
+      hex_distance(&pos, &start)
+    }).max().unwrap();
+
+    assert_eq!(furthest, 1535);
   }
 
   #[test]
