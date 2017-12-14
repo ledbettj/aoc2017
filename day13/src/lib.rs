@@ -24,6 +24,20 @@ mod day13 {
       Ok(ScannerArray { scanners: scanners })
     }
 
+    pub fn is_safe_traversal(&self, offset : usize) -> bool {
+      for (index, &range) in self.scanners.iter().enumerate() {
+        if range == 0 {
+          continue;
+        }
+
+        if (index + offset) % ((range -1) *2) == 0 {
+          return false;
+        }
+      }
+
+      true
+    }
+
     pub fn traverse_severity(&self) -> usize {
       let mut score : usize = 0;
 
@@ -31,20 +45,8 @@ mod day13 {
         if range == 0 {
           continue;
         }
-        /* i cannot figure out how to calculate the position of the scanner
-         * using div/remainder (*rage*) so just brute force it */
-        let mut value : isize = 0;
-        let mut dir : isize  = 1;
-        for _ in 0..index {
-          value += dir;
-          if value == 0 || value as usize == (range - 1) {
-            dir *= -1;
-          }
-        }
 
-        //println!("t = {} spos = {}/{}", index, value, range);
-
-        if value == 0 {
+        if index % ((range -1) *2) == 0 {
           score += index * range;
         }
       }
@@ -69,11 +71,30 @@ mod tests {
 
     let s = ScannerArray::parse(input).expect("Failed to parse input");
     assert_eq!(s.traverse_severity(), 24);
+
+    for i in 0..10 {
+      assert_eq!(s.is_safe_traversal(i), false);
+    }
+
+    assert_eq!(s.is_safe_traversal(10), true);
   }
 
   #[test]
   fn test_p1() {
     let s = ScannerArray::parse(INPUT).expect("Failed to parse input");
-    assert_eq!(s.traverse_severity(), 24);
+    assert_eq!(s.traverse_severity(), 1580);
+  }
+
+  #[test]
+  fn test_p2() {
+    let s = ScannerArray::parse(INPUT).expect("Failed to parse input");
+    let mut t = 0;
+
+    loop {
+      if s.is_safe_traversal(t) { break; }
+      t += 1;
+    }
+
+    assert_eq!(t, 0);
   }
 }
