@@ -39,35 +39,61 @@ mod day14 {
     }
   }
 
-  pub fn count_regions(g: &Grid, w: usize, h: usize) -> usize {
-    let mut seen : HashSet<(usize, usize)> = HashSet::new();
-    let mut count = 0;
-    let mut neighbors : Vec<(usize, usize)> = Vec::new();
+  pub fn grid_neighbors(grid: &Grid, pos: (usize, usize), w: usize, h: usize) -> Vec<(usize, usize)> {
+    let (_r, _c)  = pos;
+    let or = _r as isize;
+    let oc = _c as isize;
 
-    for i in 0..h {
-      for j in 0..h {
-        let value = g[i][j];
-        /* empty or already visited this cell */
-        if value == 0 || !seen.insert((i, j)) {
+    let mut rc = Vec::new();
+    for a in -1..2 {
+      for b in -1..2 {
+        if (a == 0 && b == 0) || (a != 0 && b != 0) {
+          continue;
+        }
+        let r = or + a;
+        let c = oc + b;
+        if r < 0 || r >= h as isize || c < 0 || c >= w as isize {
           continue;
         }
 
-        /* new group */
-        count += 1;
-        /* mark all cells in this group */
-        for a in -1..2 {
-          for b in -1..2 {
-            /* ignore diagonals and self */
-            if (a != 0 && b != 0) || (a == 0 && b == 0) {
-              continue;
-            }
-            let r = i as isize + a;
-            let c = j as isize + b;
-            if r >= 0 && r < h as isize && c >= 0 && c < w as isize {
-              neighbors.push((r as usize, c as usize));
-            }
+        if grid[r as usize][c as usize] != 0 {
+          rc.push((r as usize, c as usize));
         }
+      }
+    }
+    rc
+  }
 
+  pub fn count_regions(g: &Grid, w: usize, h: usize) -> usize {
+    let mut count = 0;
+
+    let mut to_visit : Vec<(usize, usize)> = Vec::new();
+    let mut seen : HashSet<(usize, usize)> = HashSet::new();
+
+    for i in 0..h {
+      for j in 0..w {
+        if g[i][j] != 0 {
+          to_visit.push((i, j));
+        }
+      }
+    }
+
+    while !to_visit.is_empty() {
+      let (r, c) = to_visit.pop().unwrap();
+      if !seen.insert((r, c)) {
+        continue;
+      }
+
+      count += 1;
+
+      let mut neighbors : Vec<(usize, usize)> = grid_neighbors(&g, (r, c), w, h);
+
+      while !neighbors.is_empty() {
+        let (nr, nc) = neighbors.pop().unwrap();
+        if seen.insert((nr, nc)) {
+          let mut x = grid_neighbors(&g, (nr, nc), w, h);
+          neighbors.append(&mut x);
+        }
       }
     }
 
@@ -96,5 +122,13 @@ mod tests {
       .sum::<u32>();
 
     assert_eq!(count, 8148);
+  }
+
+  #[test]
+  fn it_works_p2() {
+    let g = build_grid(INITIALIZER);
+    let count = count_regions(&g, 128, 128);
+
+    assert_eq!(count, 0);
   }
 }
