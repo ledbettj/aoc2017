@@ -48,9 +48,8 @@ mod day16 {
         &DanceMoves::Spin(v) => {
           let offset = p.len() - v;
           let mut rest = p.split_off(offset);
-          // this is incredibly inefficient
-          rest.reverse();
-          for ch in rest { p.insert(0, ch) }
+          rest.append(p);
+          *p = rest;
         },
         &DanceMoves::Exchange(a, b) => {
           p.swap(a, b)
@@ -71,6 +70,7 @@ mod day16 {
 #[cfg(test)]
 mod tests {
   use day16::*;
+  use std::collections::HashMap;
 
   const INPUT : &str = include_str!("../input.txt");
   #[test]
@@ -82,5 +82,35 @@ mod tests {
 
     let s = p.iter().collect::<String>();
     assert_eq!(s, "kpfonjglcibaedhm");
+  }
+
+  #[test]
+  fn p2_test() {
+    let mut p = programs_new();
+    let dance = dance_new(INPUT);
+    let mut modu = 0;
+    let mut set: HashMap<String, usize> = HashMap::new();
+
+    for i in 0..1_000_000_000 {
+      let s = p.iter().collect::<String>();
+
+      if set.contains_key(&s) {
+        let k = set[&s];
+        //println!("value at {} is same as value at {}", i, k);
+        //assert_eq!(false, true);
+        modu = (i - k);
+        break;
+      }
+
+      set.insert(s, i);
+      do_dance(&mut p, &dance);
+    }
+
+    let count = 1_000_000_000 % modu;
+    for _ in 0..count {
+      do_dance(&mut p, &dance);
+    }
+    let s = p.iter().collect::<String>();
+    assert_eq!(s, "odiabmplhfgjcekn");
   }
 }
