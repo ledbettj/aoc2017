@@ -10,7 +10,7 @@ mod day17 {
 
   impl Cyclone {
     pub fn new(step: usize) -> Cyclone {
-      let mut list = VecDeque::with_capacity(2017);
+      let mut list = VecDeque::with_capacity(50);
       list.push_front(0);
 
       Cyclone{
@@ -22,7 +22,6 @@ mod day17 {
 
     pub fn step(&mut self, value: u32) {
       let index = (self.position + self.step) % self.list.len() + 1;
-      println!("inserting {} at {}", value, index);
       self.list.insert(index, value);
       self.position = index;
     }
@@ -97,6 +96,24 @@ mod tests {
     let (pos, _) = c.iter().enumerate().find(|&(_, &value)| value == 2017).unwrap();
 
     assert_eq!(c.get(pos + 1), 1670);
+
+  }
+
+  #[test]
+  fn part2() {
+    let mut len = 1;
+    let step    = 328;
+    let mut pos = 0;
+
+    let v : u32 = (1..50_000_001).filter(|i| {
+      let index = (pos + step) % len + 1;
+      pos = index;
+      len += 1;
+
+      index == 1
+    }).last().unwrap();
+
+    assert_eq!(v, 2316253);
 
   }
 }
