@@ -1,5 +1,8 @@
 mod day18 {
   use std::collections::HashMap;
+  use std::sync::mpsc::{Sender, Receiver};
+  use std::sync::mpsc;
+  use std::thread;
 
   #[derive(Debug)]
   pub enum Operand {
@@ -19,10 +22,12 @@ mod day18 {
   }
 
   pub struct Machine {
+    pid: i64,
     registers: HashMap<char, i64>,
     ip: isize,
-    sound: i64,
-    pub recovered: Vec<i64>
+    sender:   Sender<i64>,
+    receiver: Receiver<i64>,
+    send_count: usize
   }
 
   impl Machine {
@@ -54,13 +59,19 @@ mod day18 {
 
     }
 
-    pub fn new() -> Machine {
-      Machine {
+    pub fn new(pid: i64, tx: Sender<i64>, rx: Receiver<i64>) -> Machine {
+      let mut m = Machine {
+        pid: pid,
         registers: HashMap::new(),
         ip: 0,
-        sound: 0,
-        recovered: Vec::new()
-      }
+        sender: tx,
+        receiver: rx,
+        send_count: 0
+      };
+
+      m.set('p', pid);
+
+      m
     }
 
     pub fn execute(&mut self, instructions: &[Instruction]) {
@@ -68,7 +79,7 @@ mod day18 {
 
       while self.ip >= 0 && self.ip < size {
         let instr = &instructions[self.ip as usize];
-        println!("ip = {} instr = {:?}", self.ip, instr);
+        println!("pid {}, ip = {} instr = {:?}, (count = {})", self.pid, self.ip, instr, self.send_count);
         self.step(&instr);
       }
     }
@@ -91,7 +102,10 @@ mod day18 {
     pub fn step(&mut self, instruction: &Instruction) {
       match instruction {
         &Instruction::Snd(ref target) => {
-          self.sound = self.get_operand(&target);
+          let v = self.get_operand(&target);
+          self.send_count += 1;
+          println!("pid {} sent {}", self.pid, v);
+          self.sender.send(v).unwrap();
           self.ip += 1;
         }
         &Instruction::Set(ref target, ref value) => {
@@ -113,7 +127,6 @@ mod day18 {
           let v = self.get_operand(&value);
           if let &Operand::Register(r) = target {
             let i = self.get(r);
-            println!("mul {} {}", i, v);
             self.set(r, i * v)
           }
           self.ip += 1;
@@ -126,12 +139,11 @@ mod day18 {
           }
           self.ip += 1;
         },
-        &Instruction::Rcv(ref check) => {
-          let v = self.get_operand(&check);
-          if v != 0 {
-            self.recovered.push(self.sound);
-            // HACK: end this madness
-            self.ip = -100;
+        &Instruction::Rcv(ref target) => {
+          if let &Operand::Register(r) = target {
+            let v = self.receiver.recv().unwrap();
+            println!("pid {} received {}", self.pid, v);
+            self.set(r, v);
           }
           self.ip += 1;
         },
@@ -159,35 +171,32 @@ fn main() {
 mod tests {
   const INPUT : &str = include_str!("../input.txt");
   use day18::*;
+  use std::sync::mpsc::{Sender, Receiver};
+  use std::sync::mpsc;
+  use std::thread;
 
   #[test]
-  fn test_example() {
-    let s = "set a 1
-add a 2
-mul a a
-mod a 5
-snd a
-set a 0
-rcv a
-jgz a -1
-set a 1
-jgz a -2";
+  fn test_p2() {
 
-    let mut m = Machine::new();
-    let i = Machine::load(s);
+    let (t1x, r1x) : (Sender<i64>, Receiver<i64>) = mpsc::channel();
+    let (t2x, r2x) : (Sender<i64>, Receiver<i64>) = mpsc::channel();
 
-    m.execute(&i);
-
-    assert_eq!(m.recovered[0], 4);
-  }
-  
-  #[test]
-  fn test_p1() {
-    let mut m = Machine::new();
+    let mut m1 = Machine::new(0, t1x, r2x);
+    let mut m2 = Machine::new(1, t2x, r1x);
     let i = Machine::load(INPUT);
+    let i2 = Machine::load(INPUT);
 
-    m.execute(&i);
+    let t = thread::spawn(move ||{
+      m1.execute(&i);
+    });
 
-    assert_eq!(m.recovered[0], 2951);
+    let t2 = thread::spawn(move ||{
+      m2.execute(&i2);
+    });
+
+
+    t.join();
+    t2.join();
+
   }
 }
